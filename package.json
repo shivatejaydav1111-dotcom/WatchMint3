@@ -1,0 +1,10 @@
+{
+  "name": "telegram-watch-earn-mini-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2"
+  }
+}

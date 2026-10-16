@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin - Watch & Earn</title><style>
+body{font-family:Arial;max-width:800px;margin:auto;padding:20px;background:#f5f5f5}
+.card{background:white;padding:18px;margin:12px 0;border-radius:14px}input{width:100%;padding:10px;margin:6px 0;box-sizing:border-box}
+button{padding:10px 14px;border:0;border-radius:10px;background:#168cff;color:white;margin:4px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+</style></head><body>
+<h2>🛠️ Video Admin</h2>
+<div class="card"><input id="key" placeholder="Admin key"><button onclick="saveKey()">Save key</button></div>
+<div class="card"><h3>Add video</h3>
+<input id="title" placeholder="Video title"><input id="url" placeholder="Video URL">
+<input id="reward" type="number" value="10" placeholder="Coins">
+<button onclick="add()">Publish</button></div>
+<div id="list"></div>
+<script>
+let key=localStorage.adminKey||"";
+document.getElementById("key").value=key;
+function saveKey(){key=document.getElementById("key").value;localStorage.adminKey=key;load();}
+async function api(path,opt={}){opt.headers={...(opt.headers||{}),"x-admin-key":key,"Content-Type":"application/json"};let r=await fetch(path,opt);let x=await r.json();if(!r.ok)throw Error(x.error||"Error");return x}
+async function load(){try{let vs=await api("/api/admin/videos");document.getElementById("list").innerHTML=vs.map(v=>`<div class="card"><b>${esc(v.title)}</b><br><small>${esc(v.url)}</small><br>🪙 ${v.reward} · ${v.active?"Active":"Disabled"}<br><button onclick="toggle(${v.id},${v.active?0:1})">${v.active?"Disable":"Enable"}</button><button onclick="del(${v.id})">Delete</button></div>`).join("")}catch(e){document.getElementById("list").innerHTML="<p>"+e.message+"</p>"}}
+async function add(){await api("/api/admin/videos",{method:"POST",body:JSON.stringify({title:title.value,url:url.value,reward:Number(reward.value)})});title.value=url.value="";load()}
+async function toggle(id,active){await api("/api/admin/videos/"+id,{method:"PATCH",body:JSON.stringify({active})});load()}
+async function del(id){if(confirm("Delete video?")){await api("/api/admin/videos/"+id,{method:"DELETE"});load()}}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+load();
+</script></body></html>

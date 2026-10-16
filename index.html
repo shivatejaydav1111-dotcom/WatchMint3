@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Watch & Earn</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f6f8;color:#111}.wrap{max-width:600px;margin:auto;padding:18px}
+.card{background:white;border-radius:16px;padding:18px;margin:12px 0;box-shadow:0 2px 10px #0001}
+.balance{font-size:30px;font-weight:700}.video{display:flex;justify-content:space-between;gap:12px;align-items:center}
+button{border:0;border-radius:12px;padding:11px 16px;background:#168cff;color:white;font-weight:700}
+small{color:#777}.pill{font-size:13px;color:#168cff}
+</style></head>
+<body><div class="wrap">
+<h2>📺 Watch & Earn</h2>
+<div class="card"><small>Your balance</small><div class="balance">🪙 <span id="coins">0</span></div></div>
+<div id="videos"></div>
+</div>
+<script>
+const tg = window.Telegram?.WebApp;
+tg?.ready(); tg?.expand();
+const u = tg?.initDataUnsafe?.user || {id:"demo",username:"demo",first_name:"Demo User"};
+const id = String(u.id);
+
+async function init(){
+  await fetch("/api/user",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({telegram_id:id,username:u.username||"",first_name:u.first_name||""})});
+  load();
+}
+async function load(){
+  const me=await fetch("/api/me?telegram_id="+encodeURIComponent(id)).then(r=>r.json());
+  document.getElementById("coins").textContent=me.coins;
+  const videos=await fetch("/api/videos").then(r=>r.json());
+  const box=document.getElementById("videos"); box.innerHTML="";
+  videos.forEach(v=>{
+    const el=document.createElement("div"); el.className="card video";
+    el.innerHTML=`<div><b>${escapeHtml(v.title)}</b><br><span class="pill">+${v.reward} coins</span></div><button>Watch</button>`;
+    el.querySelector("button").onclick=()=>watch(v,el.querySelector("button"));
+    box.appendChild(el);
+  });
+}
+async function watch(v,btn){
+  btn.disabled=true; window.open(v.url,"_blank");
+  setTimeout(async()=>{
+    const r=await fetch("/api/complete",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({telegram_id:id,video_id:v.id})});
+    const x=await r.json();
+    alert(x.ok?`You earned ${x.reward} coins!`:x.error);
+    load();
+  },5000);
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+init();
+</script></body></html>
